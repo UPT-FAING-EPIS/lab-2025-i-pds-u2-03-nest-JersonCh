@@ -23,19 +23,32 @@ jobs:
         
     - name: Install dependencies - Payment
       working-directory: ./payment
-      run: npm install  # Cambiar npm ci por npm install
-      
+      run: |
+        npm install
+        npm ls jest --depth=0 || echo "Jest not found"
+        ls -la node_modules/.bin/ | grep jest || echo "No jest binary"
+        
     - name: Install dependencies - ATM
       working-directory: ./atm
-      run: npm install  # Cambiar npm ci por npm install
-      
+      run: |
+        npm install
+        npm ls jest --depth=0 || echo "Jest not found"
+        ls -la node_modules/.bin/ | grep jest || echo "No jest binary"
+        
+    - name: Install Jest globally (fallback)
+      run: npm install -g jest
+        
     - name: Run tests with coverage - Payment
       working-directory: ./payment
-      run: npm run test:cov
+      run: |
+        # Intentar con npx primero
+        npx jest --coverage || npm run test:cov
       
     - name: Run tests with coverage - ATM
       working-directory: ./atm
-      run: npm run test:cov
+      run: |
+        # Intentar con npx primero
+        npx jest --coverage || npm run test:cov
         
     - name: Update package.json - Payment
       working-directory: ./payment
@@ -65,9 +78,11 @@ jobs:
       run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true  # Continúa aunque falle la publicación
         
     - name: Publish to GitHub Packages - ATM
       working-directory: ./atm
       run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true  # Continúa aunque falle la publicación
