@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test-and-publish:
     runs-on: ubuntu-latest
@@ -25,30 +29,31 @@ jobs:
       working-directory: ./payment
       run: |
         npm install
-        npm ls jest --depth=0 || echo "Jest not found"
-        ls -la node_modules/.bin/ | grep jest || echo "No jest binary"
+        # Verificar que jest está instalado
+        npm list jest || npm list @types/jest || echo "Jest dependencies check"
         
-    - name: Install dependencies - ATM
+    - name: Install dependencies - ATM  
       working-directory: ./atm
       run: |
         npm install
-        npm ls jest --depth=0 || echo "Jest not found"
-        ls -la node_modules/.bin/ | grep jest || echo "No jest binary"
+        # Verificar que jest está instalado
+        npm list jest || npm list @types/jest || echo "Jest dependencies check"
         
-    - name: Install Jest globally (fallback)
-      run: npm install -g jest
-        
-    - name: Run tests with coverage - Payment
+    - name: Fix permissions and run tests - Payment
       working-directory: ./payment
       run: |
-        # Intentar con npx primero
-        npx jest --coverage || npm run test:cov
+        # Dar permisos de ejecución a los binarios de node_modules
+        chmod +x node_modules/.bin/* || true
+        # Ejecutar tests usando npm (que maneja mejor los paths)
+        npm run test:cov
       
-    - name: Run tests with coverage - ATM
-      working-directory: ./atm
+    - name: Fix permissions and run tests - ATM
+      working-directory: ./atm  
       run: |
-        # Intentar con npx primero
-        npx jest --coverage || npm run test:cov
+        # Dar permisos de ejecución a los binarios de node_modules
+        chmod +x node_modules/.bin/* || true
+        # Ejecutar tests usando npm (que maneja mejor los paths)
+        npm run test:cov
         
     - name: Update package.json - Payment
       working-directory: ./payment
@@ -78,11 +83,11 @@ jobs:
       run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: true  # Continúa aunque falle la publicación
+      continue-on-error: true
         
     - name: Publish to GitHub Packages - ATM
       working-directory: ./atm
       run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: true  # Continúa aunque falle la publicación
+      continue-on-error: true
