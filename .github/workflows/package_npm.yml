@@ -1,4 +1,4 @@
-name: Test, SonarCloud & Publish NPM Packages
+name: Test & Publish NPM Packages
 
 on:
   push:
@@ -13,8 +13,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Necesario para SonarCloud
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -25,11 +23,11 @@ jobs:
         
     - name: Install dependencies - Payment
       working-directory: ./payment
-      run: npm ci
+      run: npm install  # Cambiar npm ci por npm install
       
     - name: Install dependencies - ATM
       working-directory: ./atm
-      run: npm ci
+      run: npm install  # Cambiar npm ci por npm install
       
     - name: Run tests with coverage - Payment
       working-directory: ./payment
@@ -38,30 +36,22 @@ jobs:
     - name: Run tests with coverage - ATM
       working-directory: ./atm
       run: npm run test:cov
-      
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         
     - name: Update package.json - Payment
       working-directory: ./payment
       run: |
-        # Reemplaza "ch" con tu apellido real
-        npm pkg set name="@${{ github.repository_owner }}/payment_ch"
+        npm pkg set name="@upt-faing-epis/payment_jersonch"
         npm pkg set version="1.0.${{ github.run_number }}"
-        npm pkg set repository.url="git+https://github.com/${{ github.repository }}.git"
+        npm pkg set repository.url="git+https://github.com/UPT-FAING-EPIS/lab-2025-i-pds-u2-03-nest-JersonCh.git"
         npm pkg set publishConfig.registry="https://npm.pkg.github.com"
         npm pkg set publishConfig.access="public"
         
     - name: Update package.json - ATM
       working-directory: ./atm
       run: |
-        # Reemplaza "ch" con tu apellido real
-        npm pkg set name="@${{ github.repository_owner }}/atm_ch"
+        npm pkg set name="@upt-faing-epis/atm_jersonch"
         npm pkg set version="1.0.${{ github.run_number }}"
-        npm pkg set repository.url="git+https://github.com/${{ github.repository }}.git"
+        npm pkg set repository.url="git+https://github.com/UPT-FAING-EPIS/lab-2025-i-pds-u2-03-nest-JersonCh.git"
         npm pkg set publishConfig.registry="https://npm.pkg.github.com"
         npm pkg set publishConfig.access="public"
         

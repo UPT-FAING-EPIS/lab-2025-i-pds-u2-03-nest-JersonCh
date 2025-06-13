@@ -27,15 +27,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Install dependencies - Payment
       working-directory: ./payment
-      run: npm ci
+      run: npm install
       
     - name: Install dependencies - ATM
       working-directory: ./atm
-      run: npm ci
+      run: npm install
       
     - name: Install Compodoc globally
       run: npm install -g @compodoc/compodoc
@@ -175,7 +174,7 @@ jobs:
                 </div>
                 
                 <div class="footer">
-                    <p>📅 Generado automáticamente el $(date)</p>
+                    <p>📅 Generado automáticamente</p>
                     <p>🚀 Construido con GitHub Actions y Compodoc</p>
                 </div>
             </div>
