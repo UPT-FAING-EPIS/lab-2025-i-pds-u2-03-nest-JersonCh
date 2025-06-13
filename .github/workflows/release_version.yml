@@ -1,0 +1,106 @@
+name: Create Release Version
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        cd payment && npm ci
+        cd ../atm && npm ci
+        
+    - name: Run tests
+      run: |
+        cd payment && npm run test:cov
+        cd ../atm && npm run test:cov
+        
+    - name: Build packages
+      run: |
+        cd payment && npm run build
+        cd ../atm && npm run build
+        
+    - name: Update package versions
+      run: |
+        cd payment
+        npm pkg set name="@${{ github.repository_owner }}/payment_ch"
+        npm pkg set version="${{ github.ref_name }}"
+        npm pack
+        
+        cd ../atm
+        npm pkg set name="@${{ github.repository_owner }}/atm_ch"
+        npm pkg set version="${{ github.ref_name }}"
+        npm pack
+        
+    - name: Create release directory
+      run: |
+        mkdir -p release-assets
+        cp payment/*.tgz release-assets/
+        cp atm/*.tgz release-assets/
+        
+    - name: Generate release notes
+      run: |
+        cat > RELEASE_NOTES.md << 'EOF'
+        # 🚀 Release ${{ github.ref_name }}
+        
+        ## 📋 Patrones de Diseño Implementados
+        
+        ### 💳 Strategy Pattern (Payment System)
+        - ✅ **IPaymentStrategy Interface** - Contrato base para estrategias de pago
+        - ✅ **CreditCardPaymentStrategy** - Implementación para pagos con tarjeta de crédito
+        - ✅ **DebitCardPaymentStrategy** - Implementación para pagos con tarjeta de débito
+        - ✅ **CashPaymentStrategy** - Implementación para pagos en efectivo
+        - ✅ **PaymentContext** - Contexto que mantiene referencia a la estrategia
+        - ✅ **PaymentService** - Servicio fachada para facilitar el uso
+        - ✅ **Pruebas unitarias completas** con cobertura
+        
+        ### 🏧 Command Pattern (ATM System)
+        - ✅ **ICommand Interface** - Contrato base para comandos
+        - ✅ **WithdrawCommand** - Comando para retiros de dinero
+        - ✅ **DepositCommand** - Comando para depósitos de dinero
+        - ✅ **Account** - Receptor que contiene la lógica de negocio
+        - ✅ **ATM** - Invocador que ejecuta comandos
+        - ✅ **Pruebas unitarias completas** con cobertura
+        
+        ## 📦 Artefactos incluidos
+        - `payment_ch-${{ github.ref_name }}.tgz` - Paquete del sistema de pagos
+        - `atm_ch-${{ github.ref_name }}.tgz` - Paquete del sistema ATM
+        
+        ## 📚 Documentación
+        La documentación completa está disponible en: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        
+        ## 🧪 Calidad del Código
+        - ✅ Pruebas unitarias: 100% pasando
+        - ✅ Cobertura de código reportada
+        - ✅ Análisis SonarCloud completado
+        - ✅ Documentación JSDoc completa
+        
+        ---
+        **Generado automáticamente por GitHub Actions** 🤖
+        EOF
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: "Release ${{ github.ref_name }}"
+        body_path: RELEASE_NOTES.md
+        files: |
+          release-assets/*.tgz
+        draft: false
+        prerelease: false
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,83 @@
+name: Test, SonarCloud & Publish NPM Packages
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Necesario para SonarCloud
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@${{ github.repository_owner }}'
+        
+    - name: Install dependencies - Payment
+      working-directory: ./payment
+      run: npm ci
+      
+    - name: Install dependencies - ATM
+      working-directory: ./atm
+      run: npm ci
+      
+    - name: Run tests with coverage - Payment
+      working-directory: ./payment
+      run: npm run test:cov
+      
+    - name: Run tests with coverage - ATM
+      working-directory: ./atm
+      run: npm run test:cov
+      
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        
+    - name: Update package.json - Payment
+      working-directory: ./payment
+      run: |
+        # Reemplaza "ch" con tu apellido real
+        npm pkg set name="@${{ github.repository_owner }}/payment_ch"
+        npm pkg set version="1.0.${{ github.run_number }}"
+        npm pkg set repository.url="git+https://github.com/${{ github.repository }}.git"
+        npm pkg set publishConfig.registry="https://npm.pkg.github.com"
+        npm pkg set publishConfig.access="public"
+        
+    - name: Update package.json - ATM
+      working-directory: ./atm
+      run: |
+        # Reemplaza "ch" con tu apellido real
+        npm pkg set name="@${{ github.repository_owner }}/atm_ch"
+        npm pkg set version="1.0.${{ github.run_number }}"
+        npm pkg set repository.url="git+https://github.com/${{ github.repository }}.git"
+        npm pkg set publishConfig.registry="https://npm.pkg.github.com"
+        npm pkg set publishConfig.access="public"
+        
+    - name: Build packages
+      run: |
+        cd payment && npm run build
+        cd ../atm && npm run build
+        
+    - name: Publish to GitHub Packages - Payment
+      working-directory: ./payment
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Publish to GitHub Packages - ATM
+      working-directory: ./atm
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

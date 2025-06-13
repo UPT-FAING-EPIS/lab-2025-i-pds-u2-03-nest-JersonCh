@@ -1,0 +1,203 @@
+name: Publish Documentation to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies - Payment
+      working-directory: ./payment
+      run: npm ci
+      
+    - name: Install dependencies - ATM
+      working-directory: ./atm
+      run: npm ci
+      
+    - name: Install Compodoc globally
+      run: npm install -g @compodoc/compodoc
+      
+    - name: Generate documentation - Payment
+      working-directory: ./payment
+      run: |
+        compodoc -p tsconfig.json -d ../docs/payment --theme stripe --name "Payment System - Strategy Pattern"
+        
+    - name: Generate documentation - ATM
+      working-directory: ./atm
+      run: |
+        compodoc -p tsconfig.json -d ../docs/atm --theme stripe --name "ATM System - Command Pattern"
+        
+    - name: Create main index page
+      run: |
+        mkdir -p docs
+        cat > docs/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Patrones de Diseño de Comportamiento - Lab 03</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    line-height: 1.6; 
+                    color: #333; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                }
+                .container { 
+                    max-width: 1200px; 
+                    margin: 0 auto; 
+                    padding: 40px 20px; 
+                }
+                .header {
+                    text-align: center;
+                    color: white;
+                    margin-bottom: 60px;
+                }
+                .header h1 {
+                    font-size: 3em;
+                    margin-bottom: 20px;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                }
+                .header p {
+                    font-size: 1.2em;
+                    opacity: 0.9;
+                }
+                .projects {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                    gap: 30px;
+                    margin-top: 40px;
+                }
+                .project {
+                    background: white;
+                    padding: 30px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                }
+                .project:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+                }
+                .project h2 {
+                    color: #2c3e50;
+                    margin-bottom: 15px;
+                    font-size: 1.8em;
+                }
+                .project p {
+                    color: #666;
+                    margin-bottom: 25px;
+                    line-height: 1.7;
+                }
+                .btn {
+                    display: inline-block;
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    color: white;
+                    padding: 12px 25px;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    font-weight: bold;
+                    transition: all 0.3s ease;
+                }
+                .btn:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                }
+                .pattern-info {
+                    background: rgba(255,255,255,0.1);
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-top: 10px;
+                    color: white;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 60px;
+                    color: white;
+                    opacity: 0.8;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎯 Patrones de Diseño de Comportamiento</h1>
+                    <p>Laboratorio 03 - Implementación de Strategy y Command Pattern</p>
+                    <p><strong>Autor:</strong> JersonCh | <strong>Curso:</strong> Patrones de Diseño de Software</p>
+                </div>
+                
+                <div class="projects">
+                    <div class="project">
+                        <h2>💳 Payment System</h2>
+                        <p>Implementación del <strong>patrón Strategy</strong> para gestionar diferentes métodos de pago de manera flexible y extensible.</p>
+                        <div class="pattern-info">
+                            <strong>Componentes:</strong> IPaymentStrategy, CreditCard, DebitCard, Cash, PaymentContext, PaymentService
+                        </div>
+                        <br>
+                        <a href="./payment/index.html" class="btn">📚 Ver Documentación →</a>
+                    </div>
+                    
+                    <div class="project">
+                        <h2>🏧 ATM System</h2>
+                        <p>Implementación del <strong>patrón Command</strong> para encapsular operaciones bancarias como objetos, permitiendo mayor flexibilidad.</p>
+                        <div class="pattern-info">
+                            <strong>Componentes:</strong> ICommand, Account, WithdrawCommand, DepositCommand, ATM
+                        </div>
+                        <br>
+                        <a href="./atm/index.html" class="btn">📚 Ver Documentación →</a>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>📅 Generado automáticamente el $(date)</p>
+                    <p>🚀 Construido con GitHub Actions y Compodoc</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        EOF
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './docs'
+        
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-docs
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
